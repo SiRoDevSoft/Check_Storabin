@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block body %}
+<header class="top">
+  <div class="inner">
+    <div class="titlebar">
+      <h1>Artículos · Añelo 1117</h1>
+      <button class="adm" id="btnAdm">Administrar</button>
+    </div>
+    <div class="searchbox">
+      <input id="q" type="search" placeholder="Código, descripción o ubicación" autocomplete="off">
+      <button class="clear" id="clear">×</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="bar"><span id="count"></span><button class="chip" id="chipSin">Sin ubicación</button></div>
+  <div id="results"></div>
+</div>
+
+<div class="backdrop" id="backdrop"><div class="sheet" id="sheet"></div></div>
+<input type="file" id="file" accept=".xlsx,.xls" style="display:none">
+<div class="toast" id="toast"></div>
+
+<script src="/static/app.js"></script>
+{% endblock %}
