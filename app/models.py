@@ -11,9 +11,10 @@ class Material(Base):
     planta = Column(String, default="1608")
     sloc = Column(String, default="1117")
     storage_bin = Column(String, index=True)                    # ubicacion
-    stock = Column(Numeric)                                     # Unrestricted use
+    stock = Column(Numeric)                                     # Unrestricted use, SLoc 1117
     reservado = Column(Numeric)
     pendiente = Column(Numeric)                                 # On-Order Stock
+    redeployment_stock = Column(Numeric)                        # Unrestricted use, SLoc 9001 (redeployment)
     unidad = Column(String, default="EA")
     tipo_material = Column(String)                               # ZSCP, ZMRO, etc
     batch = Column(String)

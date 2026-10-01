@@ -13,6 +13,7 @@ class MaterialOut(BaseModel):
     stock: Optional[Decimal] = None
     reservado: Optional[Decimal] = None
     pendiente: Optional[Decimal] = None
+    redeployment_stock: Optional[Decimal] = None
     unidad: Optional[str] = None
     tipo_material: Optional[str] = None
     batch: Optional[str] = None
@@ -22,14 +23,25 @@ class MaterialOut(BaseModel):
 
 
 class MaterialIn(BaseModel):
+    """Alta de un articulo nuevo. Acepta un stock inicial porque todavia
+    no existe ningun reporte de SAP que lo haya cargado."""
     codigo: str
     descripcion: Optional[str] = None
     storage_bin: Optional[str] = None
     stock: Optional[Decimal] = None
-    reservado: Optional[Decimal] = None
-    pendiente: Optional[Decimal] = None
     unidad: Optional[str] = "EA"
     tipo_material: Optional[str] = None
+    notas: Optional[str] = None
+
+
+class MaterialCorreccion(BaseModel):
+    """Correccion de un articulo existente. A proposito NO incluye stock,
+    reservado ni pendiente: esos numeros solo deben venir de un reporte
+    de SAP importado, para que la base nunca se desincronice del sistema
+    real. Lo que si tiene sentido corregir a mano es la descripcion, la
+    ubicacion (a veces SAP tiene la bin vieja o vacia) y las notas."""
+    descripcion: Optional[str] = None
+    storage_bin: Optional[str] = None
     notas: Optional[str] = None
 
 

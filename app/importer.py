@@ -17,6 +17,7 @@ from .models import Material
 COLUMN_PATTERNS = {
     "codigo": [r"^material$", r"^material \d*$", r"^articulo$"],
     "descripcion": [r"^description$", r"^descripcion$", r"^descr$", r"texto breve"],
+    "storage_location": [r"^storage location$", r"^storage lo$", r"^sloc$", r"^almacen$"],
     "storage_bin": [r"^storage bin$", r"^storage bi", r"^ubicacion$", r"^bin$"],
     "stock": [r"^unrestricted", r"libre utilizacion"],
     "reservado": [r"reserv"],
@@ -116,7 +117,7 @@ def import_workbook(db: Session, file_bytes: bytes) -> dict:
     data_rows = rows[hi + 1:]
 
     is_movement_report = "posting_date" in col and "qty" in col
-    stats = {"nuevos": 0, "actualizados": 0, "ingresos": 0, "filas": 0}
+    stats = {"nuevos": 0, "actualizados": 0, "ingresos": 0, "filas": 0, "redeployment": 0, "otros_sloc": 0}
     ultimos_ingresos = {}  # codigo -> (fecha, cantidad)
 
     for row in data_rows:
@@ -139,6 +140,34 @@ def import_workbook(db: Session, file_bytes: bytes) -> dict:
             prev = ultimos_ingresos.get(codigo)
             if prev is None or f > prev[0]:
                 ultimos_ingresos[codigo] = (f, abs(q) if q is not None else None)
+            continue
+
+        sloc = None
+        if col.get("storage_location") is not None and row[col["storage_location"]] is not None:
+            sloc = str(row[col["storage_location"]]).strip()
+
+        # Reporte de redeployment (deposito 9001): solo carga ese numero
+        # aparte, sin tocar ubicacion/stock de 1117 del mismo material.
+        if sloc == "9001":
+            material = db.get(Material, codigo)
+            is_new = material is None
+            if is_new:
+                material = Material(codigo=codigo)
+                db.add(material)
+            if col.get("descripcion") is not None and row[col["descripcion"]] and not material.descripcion:
+                material.descripcion = str(row[col["descripcion"]]).strip()
+            if col.get("stock") is not None:
+                v = _to_decimal(row[col["stock"]])
+                if v is not None:
+                    material.redeployment_stock = v
+            stats["redeployment"] += 1
+            stats["nuevos" if is_new else "actualizados"] += 1
+            continue
+
+        # Cualquier otro deposito que no sea 1117 (ni 9001): no lo tocamos,
+        # para no mezclar ubicaciones/stocks de depositos distintos.
+        if sloc and sloc not in ("1117", ""):
+            stats["otros_sloc"] += 1
             continue
 
         material = db.get(Material, codigo)
@@ -182,6 +211,11 @@ def import_workbook(db: Session, file_bytes: bytes) -> dict:
 
     db.commit()
     stats["ok"] = True
-    stats["tipo_detectado"] = "movimientos (ultimo ingreso)" if is_movement_report else "maestro / stock"
+    if is_movement_report:
+        stats["tipo_detectado"] = "movimientos (ultimo ingreso)"
+    elif stats["redeployment"] and stats["redeployment"] == stats["nuevos"] + stats["actualizados"]:
+        stats["tipo_detectado"] = "redeployment (9001)"
+    else:
+        stats["tipo_detectado"] = "maestro / stock"
     stats["columnas_detectadas"] = list(col.keys())
     return stats

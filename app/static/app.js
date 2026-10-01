@@ -107,15 +107,14 @@ async function verDetalle(codigo){
     </div>
     <div class="tiles">
       ${tile("Stock", r.stock, r.unidad)}
-      ${tile("Reservado", r.reservado, r.unidad)}
+      ${tile("Redeployment · 9001", r.redeployment_stock, r.unidad)}
       ${tile("Pendiente", r.pendiente, r.unidad)}
       <div class="tile"><div class="lbl">Último ingreso</div>${ing}</div>
     </div>
     ${r.notas? `<p>${esc(r.notas)}</p>`:""}
-    <div class="actions"><button class="btn grow" id="bClose">Cerrar</button><button class="btn sec" id="bEdit">Corregir</button></div>
+    <div class="actions"><button class="btn grow" id="bClose">Cerrar</button></div>
   `);
   $("#bClose").onclick = close;
-  $("#bEdit").onclick = () => editar(r);
   $("#bCopyDesc").onclick = () => copiar(r.descripcion||"", $("#bCopyDesc"));
   if(ubic) $("#bCopyBin").onclick = () => copiar(ubic, $("#bCopyBin"));
 }
@@ -187,7 +186,10 @@ $("#file").addEventListener("change", async e => {
     const data = await res.json();
     if(!res.ok){ toast(data.detail || "Error al importar"); return; }
     close(); buscar();
-    toast(`Importado (${data.tipo_detectado}): ${data.nuevos} nuevos, ${data.actualizados} actualizados, ${data.ingresos} con último ingreso`);
+    const partes = [`${data.nuevos} nuevos`, `${data.actualizados} actualizados`];
+    if(data.ingresos) partes.push(`${data.ingresos} con último ingreso`);
+    if(data.redeployment) partes.push(`${data.redeployment} de redeployment (9001)`);
+    toast(`Importado (${data.tipo_detectado}): ${partes.join(", ")}`);
   }catch(err){ /* PIN cancelado */ }
 });
 
