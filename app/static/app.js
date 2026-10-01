@@ -72,21 +72,24 @@ function tile(label, val, unit){
 const ICON_COPY = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="1.5"></rect><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"></path></svg>`;
 const ICON_OK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
 
-async function copiar(texto, btn){
-  try{ await navigator.clipboard.writeText(texto); }
-  catch(e){
+function copiar(texto, btn){
+  // Feedback visual inmediato, sin esperar a que resuelva el portapapeles
+  // (eso puede tardar un toque y se sentía como que "no pasó nada").
+  let original = null;
+  if(btn){
+    original = btn.innerHTML;
+    btn.innerHTML = ICON_OK; btn.classList.add("copied");
+    setTimeout(()=>{ btn.innerHTML = original; btn.classList.remove("copied"); }, 1400);
+  }
+  toast("Copiado: " + texto);
+
+  navigator.clipboard.writeText(texto).catch(()=>{
     const ta = document.createElement("textarea");
     ta.value = texto; ta.style.position="fixed"; ta.style.opacity="0";
     document.body.appendChild(ta); ta.select();
     try{ document.execCommand("copy"); }catch(e2){}
     document.body.removeChild(ta);
-  }
-  if(btn){
-    const original = btn.innerHTML;
-    btn.innerHTML = ICON_OK; btn.classList.add("copied");
-    setTimeout(()=>{ btn.innerHTML = original; btn.classList.remove("copied"); }, 1400);
-  }
-  toast("Copiado: " + texto);
+  });
 }
 
 async function verDetalle(codigo){
@@ -169,6 +172,7 @@ $("#btnAdm").addEventListener("click", () => {
     <h2>Administrar</h2>
     <button class="btn block" id="aNew">+ Agregar artículo</button>
     <button class="btn block sec" id="aImp">Cargar Excel de SAP</button>
+    <p class="sub">El mismo botón sirve para los dos reportes: el de depósito 1117 (ubicación y stock) y el de 9001 (redeployment). La app distingue uno de otro por la columna "Storage Location" del archivo — no hace falta avisarle cuál es cuál.</p>
     <a class="btn block sec" href="/api/reservas/exportar" style="display:block;text-decoration:none;text-align:left">Exportar reservas a CSV</a>
     <button class="btn sec" id="aClose" style="width:100%">Cerrar</button>
   `);
